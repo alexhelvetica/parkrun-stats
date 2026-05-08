@@ -67,15 +67,21 @@ function ageGradeLogic(stats) {
     .map((run) => run.ageGrade)
     .filter((ageGrade) => ageGrade > 0);
 
-  stats.fastestAgeGrade = `${Math.max(...ageGrades).toFixed(2)}%`;
-  stats.slowestAgeGrade = `${Math.min(...ageGrades).toFixed(2)}%`;
+  if (ageGrades.length == 0) {
+    stats.fastestAgeGrade = null;
+    stats.slowestAgeGrade = null;
+    stats.averageAgeGrade = null;
+  } else {
+    stats.fastestAgeGrade = Math.max(...ageGrades).toFixed(2);
+    stats.slowestAgeGrade = Math.min(...ageGrades).toFixed(2);
+    stats.averageAgeGrade = (
+      ageGrades.reduce((partialSum, ageGrade) => partialSum + ageGrade, 0) /
+      ageGrades.length
+    ).toFixed(2);
+  }
+
   stats.eventsWithoutAgeGrade = stats.total - ageGrades.length;
   stats.eventsWithAgeGrade = ageGrades.length;
-
-  stats.averageAgeGrade = `${(
-    ageGrades.reduce((partialSum, ageGrade) => partialSum + ageGrade, 0) /
-    ageGrades.length
-  ).toFixed(2)}%`;
 }
 
 /*
@@ -117,13 +123,19 @@ function eventLogic(stats) {
 function positionLogic(stats, minStartPos = 1, minEndPos = 25) {
   var positions = stats.runs.map((run) => run.position);
 
-  stats.fastestPosition = Math.min(...positions);
-  stats.slowestPosition = Math.max(...positions);
+  if (positions.length == 0) {
+    stats.fastestPosition = null;
+    stats.slowestPosition = null;
+    stats.averagePosition = null;
+  } else {
+    stats.fastestPosition = Math.min(...positions);
+    stats.slowestPosition = Math.max(...positions);
 
-  stats.averagePosition = (
-    positions.reduce((partialSum, position) => partialSum + position, 0) /
-    stats.total
-  ).toFixed(2);
+    stats.averagePosition = (
+      positions.reduce((partialSum, position) => partialSum + position, 0) /
+      stats.total
+    ).toFixed(2);
+  }
 
   stats.positionsBetween = {};
 
@@ -148,21 +160,27 @@ function timeLogic(stats) {
     return new Date(`1970-01-01T${run.time}`).getTime();
   });
 
-  stats.fastestTime = formatTime(Math.min(...times));
-  stats.slowestTime = formatTime(Math.max(...times));
+  if (times.length == 0) {
+    stats.fastestTime = null;
+    stats.slowestTime = null;
+    stats.averageTime = null;
+  } else {
+    stats.fastestTime = formatTime(Math.min(...times));
+    stats.slowestTime = formatTime(Math.max(...times));
 
-  // Getting The participants Average Parkrun Time.
-  // Rounding it to the nearest second, by
-  //  - dividing it by 1000 (to remove the milisecond component),
-  //  - Rounding to the nearest whole number
-  //  - multiplying it by 1000 (to add back the milisecond component)
-  var averageTime =
-    Math.round(
-      times.reduce((partialSum, time) => partialSum + time, 0) /
-        stats.total /
-        1000,
-    ) * 1000;
-  stats.averageTime = formatTime(averageTime);
+    // Getting The participants Average Parkrun Time.
+    // Rounding it to the nearest second, by
+    //  - dividing it by 1000 (to remove the milisecond component),
+    //  - Rounding to the nearest whole number
+    //  - multiplying it by 1000 (to add back the milisecond component)
+    var averageTime =
+      Math.round(
+        times.reduce((partialSum, time) => partialSum + time, 0) /
+          stats.total /
+          1000,
+      ) * 1000;
+    stats.averageTime = formatTime(averageTime);
+  }
 }
 
 function formatTime(time) {
