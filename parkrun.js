@@ -2,7 +2,8 @@ var urls = {
   accountSearch: "https://api.parkrunapp.com/api/users/search/{searchterm}", // https://api.parkrunapp.com/api/users/search/michaela+wheeler
   event: "https://api.parkrunapp.com/api/events/{eventId}", // https://api.parkrunapp.com/api/events/3838
   eventResults: "https://api.parkrunapp.com/api/events/{eventId}/history/all", // https://api.parkrunapp.com/api/events/3838/history/all
-  eventResult: "https://api.parkrunapp.com/api/events/{eventId}/results/instances/{date}", // https://api.parkrunapp.com/api/events/3838/results/instances/20260418
+  eventResult:
+    "https://api.parkrunapp.com/api/events/{eventId}/results/instances/{date}", // https://api.parkrunapp.com/api/events/3838/results/instances/20260418
   parkrunnerStats: "https://api.parkrunapp.com/api/activities/{parkrunnerId}", // https://api.parkrunapp.com/api/activities/7472767
 };
 
@@ -15,8 +16,7 @@ var parkrunnerIds = {
 async function fetchWebPageAsync(url) {
   let response = await fetch(url, {
     method: "GET",
-    headers: {
-    },
+    headers: {},
   });
 
   return await response
@@ -103,10 +103,9 @@ async function getResults(parkrunnerId, stats) {
 
 function ageGradeLogic(results, stats = {}) {
   var ageGrades = results
-    .map(function (event) {
-      return parseFloat(event.AgeGrade); // Number(event.AgeGrade.replace(/[^\d.]/g,''));
-    })
-    .filter((pos) => !Number.isNaN(pos));
+    .map((run) => parseFloat(run.AgeGrade))
+    // Number(event.AgeGrade.replace(/[^\d.]/g,''));
+    .filter((ageGrade) => !Number.isNaN(ageGrade));
 
   stats.fastestAgeGrade = `${Math.max(...ageGrades)}%`;
   stats.slowestAgeGrade = `${Math.min(...ageGrades)}%`;
@@ -114,7 +113,8 @@ function ageGradeLogic(results, stats = {}) {
   stats.eventsWithAgeGrade = ageGrades.length;
 
   stats.averageAgeGrade = `${(
-    ageGrades.reduce((partialSum, a) => partialSum + a, 0) / ageGrades.length
+    ageGrades.reduce((partialSum, ageGrade) => partialSum + ageGrade, 0) /
+    ageGrades.length
   ).toFixed(2)}%`;
 }
 
@@ -124,20 +124,20 @@ function ageGradeLogic(results, stats = {}) {
 function eventLogic(results, stats = {}) {
   stats.eventFrequency = {};
 
-  results.forEach((event) => {
-    stats.eventFrequency[event.Event] =
-      (stats.eventFrequency[event.Event] ?? 0) + 1;
+  results.forEach((run) => {
+    stats.eventFrequency[run.Event] =
+      (stats.eventFrequency[run.Event] ?? 0) + 1;
   });
 
   stats.alphabet = {};
   // ASCII value for 'A' is 65, and 'Z' is 90
   for (let i = 65; i <= 90; i++) {
     var letter = String.fromCharCode(i);
-    var event = results.find((ob) => ob.Event[0] == letter);
+    var run = results.find((run) => run.Event[0] == letter);
 
-    if (event != null) {
+    if (run != null) {
       stats.alphabet[letter] =
-        `${event.Event} (${event.RunDate} #${event.RunNumber})`;
+        `${run.Event} (${run.RunDate} #${run.RunNumber})`;
     } else {
       stats.alphabet[letter] = null;
     }
@@ -150,15 +150,14 @@ function eventLogic(results, stats = {}) {
   Gets the 1st occurance of a position Positions in a list
 */
 function positionLogic(results, stats = {}, minStartPos = 1, minEndPos = 25) {
-  var positions = results.map(function (event) {
-    return Number(event.Pos);
-  });
+  var positions = results.map((run) => Number(run.Pos));
 
   stats.fastestPosition = Math.min(...positions);
   stats.slowestPosition = Math.max(...positions);
 
   stats.averagePosition = (
-    positions.reduce((partialSum, a) => partialSum + a, 0) / results.length
+    positions.reduce((partialSum, position) => partialSum + position, 0) /
+    results.length
   ).toFixed(2);
 
   stats.positionsBetween = {};
@@ -168,10 +167,10 @@ function positionLogic(results, stats = {}, minStartPos = 1, minEndPos = 25) {
   stats.positionsBetweenMax = minEndPos;
 
   for (var pos = minStartPos; pos <= minEndPos; pos++) {
-    var event = results.find((ob) => ob.Pos == pos);
-    if (event != null) {
+    var run = results.find((run) => run.Pos == pos);
+    if (run != null) {
       stats.positionsBetween[pos] =
-        `${event.Event} (${event.RunDate} #${event.RunNumber})`;
+        `${run.Event} (${run.RunDate} #${run.RunNumber})`;
     } else {
       stats.positionsBetween[pos] = null;
     }
@@ -181,8 +180,8 @@ function positionLogic(results, stats = {}, minStartPos = 1, minEndPos = 25) {
 
 function timeLogic(results, stats = {}) {
   // Gets all the participants Parkrun Times
-  var times = results.map((r) => {
-    var time = (r.Time.length == 5 ? "00:" : "0") + r.Time;
+  var times = results.map((run) => {
+    var time = (run.Time.length == 5 ? "00:" : "0") + run.Time;
     return new Date(`1970-01-01T${time}`).getTime();
   });
 
@@ -196,7 +195,7 @@ function timeLogic(results, stats = {}) {
   //  - multiplying it by 1000 (to add back the milisecond component)
   var averageTime =
     Math.round(
-      times.reduce((partialSum, a) => partialSum + a, 0) /
+      times.reduce((partialSum, time) => partialSum + time, 0) /
         results.length /
         1000,
     ) * 1000;
@@ -204,6 +203,7 @@ function timeLogic(results, stats = {}) {
 
   return stats;
 }
+
 function formatTime(time) {
   // nl-NL Locale is important, because we want 24 Hour Time (eg. "00:22:20")
   // If we were to use en-AU Locale, we will get 12 hour Time (eg. "12:22:20 am")
