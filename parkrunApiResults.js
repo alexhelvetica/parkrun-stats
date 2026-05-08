@@ -15,12 +15,155 @@ eventsResponse.events.features.forEach((event) => {
     eventsResponse.countries[event.properties.countrycode];
 });
 
-// { method: "GET", mode: "cors" }
-// My Lambda Function has "Access-Control-Allow-Origin: https://helvetica.systems"
-// Parkrun API has nothing
-var resultsRequest = await fetch(`${resultsEndpoint}${parkrunnerId}`);
-var resultsResponse = await resultsRequest.json();
+// Using 25 as max, because I don't really want more
+async function getParkrunStats(parkrunnerId, startPos = 1, endPos = 25) {
+  var stats = await getResults(parkrunnerId);
+  stats.total = stats.runs.length;
+  stats.parkrunnerId = parkrunnerId;
 
-resultsResponse.data.runs.forEach((run) => {
-  run.event = events[run.eventId];
-});
+  ageGradeLogic(stats);
+  eventLogic(stats);
+  positionLogic(stats, startPos, endPos);
+  timeLogic(stats);
+
+  return stats;
+}
+
+async function getResults(parkrunnerId) {
+  // { method: "GET", mode: "cors" }
+  // My Lambda Function has "Access-Control-Allow-Origin: https://helvetica.systems"
+  // Parkrun API has nothing
+  var resultsRequest = await fetch(`${resultsEndpoint}${parkrunnerId}`);
+  var resultsResponse = await resultsRequest.json();
+
+  /*
+  // Seems redundant. Seeing though we can easily join the event in
+  resultsResponse.data.runs.forEach((run) => {
+    run.event = events[run.eventId];
+  });
+  */
+  stats = resultsResponse.data;
+
+  return stats;
+}
+
+function ageGradeLogic(stats) {
+  var ageGrades = stats.runs
+    .map((run) => run.ageGrade)
+    .filter((ageGrade) => ageGrade > 0);
+
+  stats.fastestAgeGrade = `${Math.max(...ageGrades).toFixed(2)}%`;
+  stats.slowestAgeGrade = `${Math.min(...ageGrades).toFixed(2)}%`;
+  stats.eventsWithoutAgeGrade = stats.total - ageGrades.length;
+  stats.eventsWithAgeGrade = ageGrades.length;
+
+  stats.averageAgeGrade = `${(
+    ageGrades.reduce((partialSum, ageGrade) => partialSum + ageGrade, 0) /
+    ageGrades.length
+  ).toFixed(2)}%`;
+}
+
+/*
+  Gets the 1st event the parkrunner has participated in for each letter in the English Alphabet.
+*/
+function eventLogic(stats) {
+  stats.eventFrequency = {};
+
+  stats.runs.forEach((run) => {
+    stats.eventFrequency[events[run.eventId].EventShortName] =
+      (stats.eventFrequency[events[run.eventId].EventShortName] ?? 0) + 1;
+  });
+
+  stats.alphabet = {};
+  // ASCII value for 'A' is 65, and 'Z' is 90
+  for (let i = 65; i <= 90; i++) {
+    var letter = String.fromCharCode(i);
+    var run = stats.runs
+      .toReversed()
+      .find((run) => events[run.eventId].EventShortName[0] == letter);
+
+    if (run != null) {
+      stats.alphabet[letter] =
+        `${events[run.eventId].EventShortName} (${formatDate(run.date)} #${run.runNumber})`;
+    } else {
+      stats.alphabet[letter] = null;
+    }
+  }
+  return stats;
+}
+
+/*
+  Gets the Min, Max and Average Parkrun Position
+  Gets the 1st occurance of a position Positions in a list
+*/
+function positionLogic(stats, minStartPos = 1, minEndPos = 25) {
+  var positions = stats.runs.map((run) => run.position);
+
+  stats.fastestPosition = Math.min(...positions);
+  stats.slowestPosition = Math.max(...positions);
+
+  stats.averagePosition = (
+    positions.reduce((partialSum, position) => partialSum + position, 0) /
+    stats.total
+  ).toFixed(2);
+
+  stats.positionsBetween = {};
+
+  // Getting the position
+  stats.positionsBetweenMin = minStartPos;
+  stats.positionsBetweenMax = minEndPos;
+
+  for (var pos = minStartPos; pos <= minEndPos; pos++) {
+    var run = stats.runs.toReversed().find((run) => run.position == pos);
+    if (run != null) {
+      stats.positionsBetween[pos] =
+        `${events[run.eventId].EventShortName} (${formatDate(run.date)} #${run.runNumber})`;
+    } else {
+      stats.positionsBetween[pos] = null;
+    }
+  }
+  return stats;
+}
+
+function timeLogic(stats) {
+  // Gets all the participants Parkrun Times
+  var times = stats.runs.map((run) => {
+    return new Date(`1970-01-01T${run.time}`).getTime();
+  });
+
+  stats.fastestTime = formatTime(Math.min(...times));
+  stats.slowestTime = formatTime(Math.max(...times));
+
+  // Getting The participants Average Parkrun Time.
+  // Rounding it to the nearest second, by
+  //  - dividing it by 1000 (to remove the milisecond component),
+  //  - Rounding to the nearest whole number
+  //  - multiplying it by 1000 (to add back the milisecond component)
+  var averageTime =
+    Math.round(
+      times.reduce((partialSum, time) => partialSum + time, 0) /
+        stats.total /
+        1000,
+    ) * 1000;
+  stats.averageTime = formatTime(averageTime);
+
+  return stats;
+}
+
+function formatTime(time) {
+  // nl-NL Locale is important, because we want 24 Hour Time (eg. "00:22:20")
+  // If we were to use en-AU Locale, we will get 12 hour Time (eg. "12:22:20 am")
+  return new Date(time).toLocaleString("nl-NL", {
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  });
+}
+
+function formatDate(date) {
+  return new Date(date).toLocaleString("en-AU", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  });
+}
