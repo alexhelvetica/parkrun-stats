@@ -1,32 +1,47 @@
 const eventsEndpoint = "https://images.parkrun.com/events.json";
 const resultsEndpoint =
   "https://epmvjspmbhy2ojypx7htjbxzve0pnvbq.lambda-url.ap-southeast-2.on.aws/?parkrunnerId=";
-var parkrunnerId = 5687217;
-
-// { method: "GET", mode: "cors" }
-// Parkrun has "Access-Control-Allow-Origin: *"
-var eventsRequest = await fetch(eventsEndpoint);
-var eventsResponse = await eventsRequest.json();
-
 var events = {};
-eventsResponse.events.features.forEach((event) => {
-  events[event.id] = event.properties;
-  events[event.id].country =
-    eventsResponse.countries[event.properties.countrycode];
-});
+var allStats = {};
+
+init();
+
+async function init() {
+  // { method: "GET", mode: "cors" }
+  // Parkrun has "Access-Control-Allow-Origin: *"
+  var eventsRequest = await fetch(eventsEndpoint);
+  var eventsResponse = await eventsRequest.json();
+
+  eventsResponse.events.features.forEach((event) => {
+    events[event.id] = event.properties;
+    events[event.id].country =
+      eventsResponse.countries[event.properties.countrycode];
+  });
+}
 
 // Using 25 as max, because I don't really want more
-async function getParkrunStats(parkrunnerId, startPos = 1, endPos = 25) {
-  var stats = await getResults(parkrunnerId);
-  stats.total = stats.runs.length;
-  stats.parkrunnerId = parkrunnerId;
+async function getParkrunStats(startPos = 1, endPos = 25) {
+  var parkrunnerId = document.getElementById("parkrunnerId").value;
+  console.log(parkrunnerId);
+  if (!parkrunnerId || parkrunnerId == NaN || parkrunnerId < 5) {
+    console.log(`Parkrunner id is required (${parkrunnerId})`);
+    return;
+  }
+  if (!allStats[parkrunnerId]) {
+    allStats[parkrunnerId] = await getResults(parkrunnerId);
+    if (!allStats[parkrunnerId]) {
+      console.log(`Parkrunner id was not found (${parkrunnerId})`);
+      return;
+    }
+    allStats[parkrunnerId].total = allStats[parkrunnerId].runs.length;
+    allStats[parkrunnerId].parkrunnerId = parkrunnerId;
+  }
 
-  ageGradeLogic(stats);
-  eventLogic(stats);
-  positionLogic(stats, startPos, endPos);
-  timeLogic(stats);
-
-  return stats;
+  ageGradeLogic(allStats[parkrunnerId]);
+  eventLogic(allStats[parkrunnerId]);
+  positionLogic(allStats[parkrunnerId], startPos, endPos);
+  timeLogic(allStats[parkrunnerId]);
+  return allStats[parkrunnerId];
 }
 
 async function getResults(parkrunnerId) {
@@ -89,7 +104,6 @@ function eventLogic(stats) {
       stats.alphabet[letter] = null;
     }
   }
-  return stats;
 }
 
 /*
@@ -122,7 +136,6 @@ function positionLogic(stats, minStartPos = 1, minEndPos = 25) {
       stats.positionsBetween[pos] = null;
     }
   }
-  return stats;
 }
 
 function timeLogic(stats) {
@@ -146,8 +159,6 @@ function timeLogic(stats) {
         1000,
     ) * 1000;
   stats.averageTime = formatTime(averageTime);
-
-  return stats;
 }
 
 function formatTime(time) {
