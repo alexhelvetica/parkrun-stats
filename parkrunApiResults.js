@@ -85,8 +85,10 @@ function eventLogic(stats) {
   stats.eventFrequency = {};
 
   stats.runs.forEach((run) => {
-    stats.eventFrequency[events[run.eventId].EventShortName] =
-      (stats.eventFrequency[events[run.eventId].EventShortName] ?? 0) + 1;
+    stats.eventFrequency[events[run.eventId]?.EventShortName ?? run.eventId] =
+      (stats.eventFrequency[
+        events[run.eventId]?.EventShortName ?? run.eventId
+      ] ?? 0) + 1;
   });
 
   stats.alphabet = {};
@@ -95,9 +97,11 @@ function eventLogic(stats) {
     var letter = String.fromCharCode(i);
     var run = stats.runs
       .toReversed()
-      .find((run) => events[run.eventId].EventShortName[0] == letter);
+      // We don't need to subsitute a value for parkrun alphabet
+      .find((run) => events[run.eventId]?.EventShortName[0] == letter);
 
     if (run != null) {
+      // We don't need to subsitute a value for parkrun alphabet
       stats.alphabet[letter] =
         `${events[run.eventId].EventShortName} (${formatDate(run.date)} #${run.runNumber})`;
     } else {
@@ -131,7 +135,7 @@ function positionLogic(stats, minStartPos = 1, minEndPos = 25) {
     var run = stats.runs.toReversed().find((run) => run.position == pos);
     if (run != null) {
       stats.positionsBetween[pos] =
-        `${events[run.eventId].EventShortName} (${formatDate(run.date)} #${run.runNumber})`;
+        `${events[run.eventId]?.EventShortName ?? run.eventId} (${formatDate(run.date)} #${run.runNumber})`;
     } else {
       stats.positionsBetween[pos] = null;
     }
