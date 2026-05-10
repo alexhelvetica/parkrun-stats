@@ -20,7 +20,7 @@ async function init() {
 }
 
 // Using 25 as max, because I don't really want more
-async function getParkrunStats(startPos = 1, endPos = 25) {
+async function getParkrunStats() {
   var parkrunnerId = document.getElementById("parkrunnerId").value;
   console.log(parkrunnerId);
   if (!parkrunnerId || parkrunnerId == NaN || parkrunnerId < 5) {
@@ -39,7 +39,7 @@ async function getParkrunStats(startPos = 1, endPos = 25) {
 
   ageGradeLogic(allStats[parkrunnerId]);
   eventLogic(allStats[parkrunnerId]);
-  positionLogic(allStats[parkrunnerId], startPos, endPos);
+  positionLogic(allStats[parkrunnerId]);
   timeLogic(allStats[parkrunnerId]);
   return allStats[parkrunnerId];
 }
