@@ -58,6 +58,7 @@ async function getResults(parkrunnerId) {
   });
   */
   stats = resultsResponse.data;
+  stats.runs.reverse();
 
   return stats;
 }
@@ -102,7 +103,6 @@ function eventLogic(stats) {
   for (let i = 65; i <= 90; i++) {
     var letter = String.fromCharCode(i);
     var run = stats.runs
-      .toReversed()
       // We don't need to subsitute a value for parkrun alphabet
       .find((run) => events[run.eventId]?.EventShortName[0] == letter);
 
@@ -144,7 +144,7 @@ function positionLogic(stats, minStartPos = 1, minEndPos = 25) {
   stats.positionsBetweenMax = minEndPos;
 
   for (var pos = minStartPos; pos <= minEndPos; pos++) {
-    var run = stats.runs.toReversed().find((run) => run.position == pos);
+    var run = stats.runs.find((run) => run.position == pos);
     if (run != null) {
       stats.positionsBetween[pos] =
         `${events[run.eventId]?.EventShortName ?? run.eventId} (${formatDate(run.date)} #${run.runNumber})`;
