@@ -104,12 +104,11 @@ function eventLogic(stats) {
     var letter = String.fromCharCode(i);
     var run = stats.runs
       // We don't need to subsitute a value for parkrun alphabet
-      .find((run) => events[run.eventId]?.EventShortName[0] == letter);
+      .findIndex((run) => events[run.eventId]?.EventShortName[0] == letter);
 
-    if (run != null) {
-      // We don't need to subsitute a value for parkrun alphabet
-      stats.alphabet[letter] =
-        `${events[run.eventId].EventShortName} (${formatDate(run.date)} #${run.runNumber})`;
+    if (run != -1) {
+      stats.alphabet[letter] = run;
+      // `${events[run.eventId].EventShortName} (${formatDate(run.date)} #${run.runNumber})`;
     } else {
       stats.alphabet[letter] = null;
     }
@@ -144,10 +143,11 @@ function positionLogic(stats, minStartPos = 1, minEndPos = 25) {
   stats.positionsBetweenMax = minEndPos;
 
   for (var pos = minStartPos; pos <= minEndPos; pos++) {
-    var run = stats.runs.find((run) => run.position == pos);
-    if (run != null) {
-      stats.positionsBetween[pos] =
-        `${events[run.eventId]?.EventShortName ?? run.eventId} (${formatDate(run.date)} #${run.runNumber})`;
+    var run = stats.runs.findIndex((run) => run.position == pos);
+
+    if (run != -1) {
+      stats.positionsBetween[pos] = run;
+      // `${events[run.eventId]?.EventShortName ?? run.eventId} (${formatDate(run.date)} #${run.runNumber})`;
     } else {
       stats.positionsBetween[pos] = null;
     }
