@@ -106,14 +106,18 @@ function ageGradeLogic(stats) {
   Gets the 1st event the parkrunner has participated in for each letter in the English Alphabet.
 */
 function eventLogic(stats) {
-  stats.eventFrequency = {};
+  eventFrequency = {};
 
   stats.runs.forEach((run) => {
-    stats.eventFrequency[events[run.eventId]?.EventShortName ?? run.eventId] =
-      (stats.eventFrequency[
-        events[run.eventId]?.EventShortName ?? run.eventId
-      ] ?? 0) + 1;
+    eventFrequency["e" + run.eventId] =
+      (eventFrequency["e" + run.eventId] ?? 0) + 1;
   });
+
+  stats.eventFrequency = Object.fromEntries(
+    Object.entries(eventFrequency).sort(([keyA, valueA], [keyB, valueB]) => {
+      return valueB - valueA;
+    }),
+  );
 
   stats.alphabet = {};
   // ASCII value for 'A' is 65, and 'Z' is 90
