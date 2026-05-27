@@ -2,6 +2,7 @@ const eventsEndpoint = "https://images.parkrun.com/events.json";
 const resultsEndpoint =
   "https://epmvjspmbhy2ojypx7htjbxzve0pnvbq.lambda-url.ap-southeast-2.on.aws/?parkrunnerId=";
 var events = {};
+var oldEvents = {};
 var allStats = {};
 
 init();
@@ -11,11 +12,27 @@ async function init() {
   // Parkrun has "Access-Control-Allow-Origin: *"
   var eventsRequest = await fetch(eventsEndpoint);
   var eventsResponse = await eventsRequest.json();
+  oldEvents = await (await fetch("./events.json")).json();
 
   eventsResponse.events.features.forEach((event) => {
     events[event.id] = event.properties;
     events[event.id].country =
       eventsResponse.countries[event.properties.countrycode];
+  });
+
+  oldEvents.Events.forEach((event) => {
+    if (events[event.Id] == null) {
+      console.log(event);
+      events[event.Id] = {};
+      events[event.Id].EventLocation = event.ShortName;
+      events[event.Id].EventLongName = event.ShortName + "parkrun";
+      events[event.Id].EventShortName = event.ShortName;
+      events[event.Id].LocalisedEventLongName = null;
+      events[event.Id].country = eventsResponse.countries[event.CountryCode];
+      events[event.Id].countrycode = event.CountryCode;
+      events[event.Id].eventname = event.Name;
+      events[event.Id].seriesid = event.Series;
+    }
   });
 }
 
