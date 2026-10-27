@@ -1,3 +1,4 @@
+import json
 from config import parkrunnerStatsUrl
 import requests
 
@@ -11,10 +12,11 @@ def lambda_handler(event, context):
             'statusCode': 400,
             'body': stats
         }
-    stats = requests.get(f"{parkrunnerStatsUrl}{parkrunnerId}/all",headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Safari/605.1.15"}).content
+    stats = requests.get(f"{parkrunnerStatsUrl}{parkrunnerId}",
+            headers={"Authorization": "Bearer"} ).json()
 
     # TODO implement
     return {
         'statusCode': 200,
-        'body': stats
+        'body': json.dumps(stats)
     }

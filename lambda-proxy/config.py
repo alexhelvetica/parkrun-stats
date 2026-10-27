@@ -1,1 +1,1 @@
-parkrunnerStatsUrl = "https://www.parkrun.com.au/parkrunner/"
+parkrunnerStatsUrl = "https://api.parkrun.com/v1/results?athleteId="
